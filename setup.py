@@ -1,46 +1,24 @@
-# -*- coding: utf-8 -*-
-
-# ------------------------------------------------------
-
-# Author: Ytturi
-
-# Author's e-mail: ytturi@protonmail.com
-
-# Version: 0.1
-
-# License: MIT
-
-# ------------------------------------------------------
-
 from setuptools import setup, find_packages
 
-
-
-
+with open("dev_requirements.txt", "r") as dev_deps:
+    test_deps = [dep.strip() for dep in dev_deps.readlines() if dep.strip()]
 
 setup(
-
-    name='reminder_bot',
-
-    version='0.1',
-
+    name="reminderbot",
+    version="1.0",
     packages=find_packages(),
-
     install_requires=[
-
         "click",
-
+        "python-telegram-bot",
         "ConfigParser",
-
+        "requests",
+        "sqlalchemy",
+        "psycopg2-binary",
     ],
-
-    entry_points='''
-
+    entry_points="""
         [console_scripts]
-
-        do_smth=reminder_bot.cli:do_smth
-
-    ''',
-
+        reminderbot=reminderbot.bot:listener
+    """,
+    # tests_require=test_deps,
+    tests_suite="spec",
 )
-
