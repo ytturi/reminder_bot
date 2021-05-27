@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Optional
 from sqlalchemy.engine import create_engine, Engine
 from sqlalchemy import Table, Column, MetaData
+from sqlalchemy.sql.schema import UniqueConstraint
 from sqlalchemy.sql.sqltypes import Integer
 from sqlalchemy.types import BigInteger, DateTime, Text
 
@@ -91,6 +92,7 @@ class Database:
             Column("title", Text, nullable=False),
             Column("date", DateTime, nullable=False),
             Column("text", Text, nullable=False),
+            UniqueConstraint("chat_id", "title", "date", name="reminder_chat_title_date_unique")
         )
 
         if init:
