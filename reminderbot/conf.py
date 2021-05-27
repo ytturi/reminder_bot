@@ -216,4 +216,3 @@ def get_database() -> Database:
         _database = Database(get_psql_connection())
 
     return _database
-

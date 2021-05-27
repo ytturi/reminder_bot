@@ -82,13 +82,15 @@ def get_enabled_chat(chat_id: int, chat_name: str) -> Optional[int]:
 
     database = get_database()
 
-    select_query = select([database.chat.c.id, database.chat.c.name]).where(database.chat.c.chat_id==chat_id)
+    select_query = select([database.chat.c.id, database.chat.c.name]).where(
+        database.chat.c.chat_id == chat_id
+    )
     result = database.engine.execute(select_query).first()
     if result is not None:
-        if result['name'] != chat_name:
-            update_chat(result['id'], result['name'])
+        if result["name"] != chat_name:
+            update_chat(result["id"], result["name"])
 
-    return result['id'] if result is not None else None
+    return result["id"] if result is not None else None
 
 
 def update_chat(chat_id: int, chat_name: str) -> None:

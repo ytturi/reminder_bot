@@ -92,7 +92,7 @@ def listener(config, init_config, init_db, verbose, debug, token) -> None:
         exit(-1)
     logger.debug("TOKEN: {}".format(TOKEN))
     updater = Updater(TOKEN, use_context=True)
-    
+
     #   ADD Handlers
     debug_enabled = get_debug_enabled()
     logger.debug(f"Debug enabled: {debug_enabled}")
@@ -107,7 +107,9 @@ def listener(config, init_config, init_db, verbose, debug, token) -> None:
         updater.start_polling()
         updater.idle()
     finally:
-        logger.info("Shutting down\nBot is going to sleep (...)\nNo more reminders today (...)\nZzz")
+        logger.info(
+            "Shutting down\nBot is going to sleep (...)\nNo more reminders today (...)\nZzz"
+        )
 
 
 # Main Process

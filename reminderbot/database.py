@@ -92,7 +92,9 @@ class Database:
             Column("title", Text, nullable=False),
             Column("date", DateTime, nullable=False),
             Column("text", Text, nullable=False),
-            UniqueConstraint("chat_id", "title", "date", name="reminder_chat_title_date_unique")
+            UniqueConstraint(
+                "chat_id", "title", "date", name="reminder_chat_title_date_unique"
+            ),
         )
 
         if init:
