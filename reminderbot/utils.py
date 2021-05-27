@@ -10,9 +10,10 @@ from functools import wraps
 from random import randint, choice
 from typing import Callable, Optional, TYPE_CHECKING
 
+from sqlalchemy import select, text
 import telegram
 
-from reminderbot.conf import get_debug_enabled
+from reminderbot.conf import get_debug_enabled, get_database
 
 if TYPE_CHECKING:
     from telegram import User
@@ -64,3 +65,46 @@ def get_username(telegram_user: User) -> str:
         str: Username if it has one. Public name otherwise
     """
     return telegram_user.username or telegram_user.full_name
+
+
+def get_enabled_chat(chat_id: int, chat_name: str) -> Optional[int]:
+    """
+    Verify that the `chat_id` is registered in the database.
+
+    If `chat_id` exists, also update the name if needed.
+
+    Args:
+        chat_id (int): chat_id from the telegram chat
+
+    Returns:
+        Optional[int]: ID of the chat when it exists, otherwise `None`
+    """
+
+    database = get_database()
+
+    select_query = select([database.chat.c.id, database.chat.c.name]).where(database.chat.c.chat_id==chat_id)
+    result = database.engine.execute(select_query).first()
+    if result is not None:
+        if result['name'] != chat_name:
+            update_chat(result['id'], result['name'])
+
+    return result['id'] if result is not None else None
+
+
+def update_chat(chat_id: int, chat_name: str) -> None:
+    """
+    Update the chat name in the database
+
+    Args:
+        chat_id (int): ID of the chat (row ID)
+        chat_name (str): [description]
+    """
+
+    update_query = text(
+        """
+        UPDATE chat SET name = :chat_name WHERE id = :chat_id
+        """
+    )
+
+    database = get_database()
+    database.engine.execute(update_query, chat_name=chat_name, chat_id=chat_id)

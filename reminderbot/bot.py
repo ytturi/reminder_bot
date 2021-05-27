@@ -19,10 +19,7 @@ from reminderbot.conf import (
     get_debug_enabled,
     get_database,
 )
-from reminderbot import TEXT_HANDLERS, REPLY_HANDLERS
-
-# Command handlers
-HANDLERS = TEXT_HANDLERS + REPLY_HANDLERS
+from reminderbot import HANDLERS
 
 
 @click.command()
