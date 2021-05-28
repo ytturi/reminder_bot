@@ -31,6 +31,8 @@ def register_chat(update: Update, context) -> None:
     logger.info(f"Register\nID: {chat_id}\nNAME: '{chat_name}'")
     update.message.reply_text(f"'{chat_name}' may be registered Soon\u2122")
 
+    register_chat_db(chat_id=chat_id, chat_name=chat_name)
+
 
 @remove_command_message
 @send_typing_action
@@ -47,18 +49,24 @@ def register_event(update: Update, context) -> None:
         update.message.reply_text(update_message)
         return
 
-    # We need to ignore the first 10 characters which are "/register "
-    message_text = update.message.text[10:]
     try:
+        # We need to ignore the first 10 characters which are "/register "
+        message_text = update.message.text_markdown_v2[10:]
         event_date, event_title, event_message = parse_message_to_event(message_text)
 
     except Exception as err:
-        update_message = "Could not process the event. Should have the format: '/register <date (dd-mm-yyyy HH:MM)>|<title>|<message>'"
-        logger.error(update_message)
-        logger.error(f"Exception: {err}")
-        logger.error(f"Message:\n{update.message.text}")
-        update.message.reply_text(update_message)
-        return
+        # Retry without markdown
+        message_text = update.message.text[10:]
+        try:
+            event_date, event_title, event_message = parse_message_to_event(message_text)
+
+        except Exception as err:
+            update_message = "Could not process the event. Should have the format: '/register <date (dd-mm-yyyy HH:MM)>|<title>|<message>'"
+            logger.error(update_message)
+            logger.error(f"Exception: {err}")
+            logger.error(f"Message:\n{update.message.text}")
+            update.message.reply_text(update_message)
+            return
 
     try:
         register_event_db(
@@ -100,6 +108,21 @@ def register_event(update: Update, context) -> None:
         )
 
     update.message.reply_text(update_message)
+
+
+def register_chat_db(chat_id: int, chat_name: str) -> None:
+    """
+    Register the chat in the database
+
+    Args:
+        chat_id (int): Telegram Chat ID
+        chat_name (str): Telegram Chat name
+    """
+
+    database = get_database()
+    insert_values = {'chat_id': chat_id, 'name': chat_name}
+    insert_query = database.chat.insert().values(insert_values)
+    database.engine.execute(insert_query)
 
 
 def register_event_db(chat_id: int, date: datetime, title: str, message: str) -> None:

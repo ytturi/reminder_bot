@@ -133,3 +133,25 @@ def parse_message_to_event(message_text: str) -> Tuple[datetime, str, str]:
     event_date = datetime.strptime(event_date_str, "%d-%m-%Y %H:%M")
 
     return event_date, event_title, event_message
+
+
+def escape_for_markdown_v2(message: str) -> str:
+    """
+    Escape a message so it can be sent with markdown_v2
+
+    Args:
+        message (str): Message without escaped characters
+
+    Returns:
+        str: Message with escaped characters
+    """
+
+    return (
+        message.replace('-', '\-')
+        .replace('!', '\!')
+        .replace('.', '\.')
+        .replace('[', '\[')
+        .replace(']', '\]')
+        .replace('(', '\(')
+        .replace(')', '\)')
+    )
