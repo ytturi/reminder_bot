@@ -1,15 +1,16 @@
 from __future__ import annotations
 from datetime import datetime
-from reminderbot.conf import get_database
 from typing import Tuple, TYPE_CHECKING
 from logging import getLogger
 
 from telegram.ext import CommandHandler
 
+from reminderbot.conf import get_database
 from reminderbot.utils import (
     remove_command_message,
     send_typing_action,
     get_enabled_chat,
+    parse_message_to_event,
 )
 
 if TYPE_CHECKING:
@@ -29,7 +30,7 @@ def register_chat(update: Update, context) -> None:
     update.message.reply_text(f"'{chat_name}' may be registered Soon\u2122")
 
 
-# @remove_command_message
+@remove_command_message
 @send_typing_action
 def register_event(update: Update, context) -> None:
     logger.info("Handle 'register'")
@@ -39,63 +40,39 @@ def register_event(update: Update, context) -> None:
 
     chat_id = get_enabled_chat(telegram_chat_id, telegram_chat_name)
 
-    if chat_id is not None:
-        # We need to ignore the first 10 characters which are "/register "
-        message_text = update.message.text[10:]
-        parse_ok = False
-        try:
-            event_date, event_title, event_message = parse_message_to_event(
-                message_text
-            )
-            parse_ok = True
-
-        except Exception as err:
-            update_message = "Could not process the event. Should have the format: '/register <date (dd-mm-yyyy HH:MM)>|<title>|<message>'"
-            logger.error(update_message)
-            logger.error(f"Exception: {err}")
-            logger.error(f"Message:\n{update.message.text}")
-
-        if parse_ok:
-            try:
-                register_event_db(
-                    chat_id=chat_id,
-                    date=event_date,
-                    title=event_title,
-                    message=event_message,
-                )
-                update_message = f"Registered:\nTitle: {event_title}\nDate:{event_date}\nMessage:\n{event_message}"
-
-            except Exception as err:
-                update_message = (
-                    "Could not register the event. Maybe it already exists? Check /list"
-                )
-
-    else:
+    if chat_id is None:
         update_message = "This chat hasn't been allowed. Try /register_chat and send a message to the owner."
+        update.message.reply_text(update_message)
+        return
+
+    # We need to ignore the first 10 characters which are "/register "
+    message_text = update.message.text[10:]
+    try:
+        event_date, event_title, event_message = parse_message_to_event(message_text)
+
+    except Exception as err:
+        update_message = "Could not process the event. Should have the format: '/register <date (dd-mm-yyyy HH:MM)>|<title>|<message>'"
+        logger.error(update_message)
+        logger.error(f"Exception: {err}")
+        logger.error(f"Message:\n{update.message.text}")
+        update.message.reply_text(update_message)
+        return
+
+    try:
+        register_event_db(
+            chat_id=chat_id,
+            date=event_date,
+            title=event_title,
+            message=event_message,
+        )
+        update_message = f"Registered:\nTitle: {event_title}\nDate:{event_date}\nMessage:\n{event_message}"
+
+    except Exception as err:
+        update_message = (
+            "Could not register the event. Maybe it already exists? Check /list"
+        )
 
     update.message.reply_text(update_message)
-
-
-def parse_message_to_event(message_text: str) -> Tuple[datetime, str, str]:
-    """
-    Parse the message text into the three attributes of an event
-
-    Args:
-        message_text (str): Raw text of the message
-
-    Returns:
-        datetime: Time of the event
-        str: Title of the event
-        str: Description of the event
-    """
-
-    event_date_str, event_title, event_message = message_text.split("|", 3)
-    event_date_str = event_date_str.strip()
-    event_title = event_title.strip()
-    event_message = event_message.strip()
-    event_date = datetime.strptime(event_date_str, "%d-%m-%Y %H:%M")
-
-    return event_date, event_title, event_message
 
 
 def register_event_db(chat_id: int, date: datetime, title: str, message: str) -> None:

@@ -6,9 +6,10 @@
 # Descr: Utils for the bot
 ###############################################################################
 from __future__ import annotations
+from datetime import datetime
 from functools import wraps
 from random import randint, choice
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Callable, Optional, Tuple, TYPE_CHECKING
 
 from sqlalchemy import select, text
 import telegram
@@ -110,3 +111,25 @@ def update_chat(chat_id: int, chat_name: str) -> None:
 
     database = get_database()
     database.engine.execute(update_query, chat_name=chat_name, chat_id=chat_id)
+
+
+def parse_message_to_event(message_text: str) -> Tuple[datetime, str, str]:
+    """
+    Parse the message text into the three attributes of an event
+
+    Args:
+        message_text (str): Raw text of the message
+
+    Returns:
+        datetime: Time of the event
+        str: Title of the event
+        str: Description of the event
+    """
+
+    event_date_str, event_title, event_message = message_text.split("|", 3)
+    event_date_str = event_date_str.strip()
+    event_title = event_title.strip()
+    event_message = event_message.strip()
+    event_date = datetime.strptime(event_date_str, "%d-%m-%Y %H:%M")
+
+    return event_date, event_title, event_message
