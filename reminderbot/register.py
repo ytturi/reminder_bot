@@ -3,6 +3,8 @@ from datetime import datetime
 from typing import Tuple, TYPE_CHECKING
 from logging import getLogger
 
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from telegram.ext import CommandHandler
 
 from reminderbot.conf import get_database
@@ -65,12 +67,33 @@ def register_event(update: Update, context) -> None:
             title=event_title,
             message=event_message,
         )
-        update_message = f"Registered:\nTitle: {event_title}\nDate:{event_date}\nMessage:\n{event_message}"
+        update_message = f"Registered: '{event_title}' on the {event_date}"
+        update.message.reply_text(update_message)
+
+    except IntegrityError as err:
+        pass
 
     except Exception as err:
-        update_message = (
-            "Could not register the event. Maybe it already exists? Check /list"
+        update_message = "Something went wrong. Try again later."
+        logger.error('Something failed inserting the event')
+        logger.error(f'Got: {err}')
+        logger.error(f"ChatID:{chat_id}\nDate:{event_date}\nTitle:{event_title}\nMessage:{event_message}")
+        update.message.reply_text(update_message)
+
+    try:
+        update_event_db(
+            chat_id=chat_id,
+            date=event_date,
+            title=event_title,
+            message=event_message,
         )
+        update_message = '\N{THUMBS UP SIGN}'
+
+    except Exception as err:
+        update_message = "Something went wrong. Try again later."
+        logger.error('Something failed updating the event')
+        logger.error(f'Got: {err}')
+        logger.error(f"ChatID:{chat_id}\nDate:{event_date}\nTitle:{event_title}\nMessage:{event_message}")
 
     update.message.reply_text(update_message)
 
@@ -91,6 +114,32 @@ def register_event_db(chat_id: int, date: datetime, title: str, message: str) ->
     insert_values = {"chat_id": chat_id, "title": title, "date": date, "text": message}
     insert_query = database.reminder.insert().values(insert_values)
     database.engine.execute(insert_query)
+
+
+def update_event_db(chat_id: int, date: datetime, title: str, message: str) -> None:
+    """
+    Register the event in the database
+
+    Args:
+        chat_id (int): ID of the chat (database)
+        date (datetime): [description]
+        title (str): [description]
+        message (str): [description]
+    """
+
+    database = get_database()
+
+    update_query = text(
+        """
+        UPDATE reminder
+        SET text = :message
+        WHERE
+            chat_id = :chat_id
+            AND title = :title
+            AND date = :date
+        """
+    )
+    database.engine.execute(update_query, chat_id=chat_id, date=date, title=title, message=message)
 
 
 REGISTER_HANDLERS = [
