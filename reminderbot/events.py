@@ -20,9 +20,9 @@ logger = getLogger(__name__)
 
 
 class DateFilter(Enum):
-    no_filter = 'NoFilter'
-    past = 'past'
-    future = 'next'
+    no_filter = "NoFilter"
+    past = "past"
+    future = "next"
 
 
 @send_typing_action
@@ -39,8 +39,11 @@ def next_event(update: Update, context) -> None:
     if chat_id is None:
         update_message = "This chat hasn't been allowed. Try /register_chat and send a message to the owner."
         update.message.reply_text(update_message)
+        return
 
-    update.message.reply_text(generate_list_events(chat_id, 5, DateFilter.future), parse_mode='markdown')
+    update.message.reply_text(
+        generate_list_events(chat_id, 5, DateFilter.future), parse_mode="markdown"
+    )
 
 
 @send_typing_action
@@ -57,8 +60,11 @@ def last_event(update: Update, context) -> None:
     if chat_id is None:
         update_message = "This chat hasn't been allowed. Try /register_chat and send a message to the owner."
         update.message.reply_text(update_message)
+        return
 
-    update.message.reply_text(generate_list_events(chat_id, 5, DateFilter.past), parse_mode='markdown')
+    update.message.reply_text(
+        generate_list_events(chat_id, 5, DateFilter.past), parse_mode="markdown"
+    )
 
 
 @send_typing_action
@@ -88,12 +94,15 @@ def list_events(update: Update, context) -> None:
     if chat_id is None:
         update_message = "This chat hasn't been allowed. Try /register_chat and send a message to the owner."
         update.message.reply_text(update_message)
+        return
 
     # Remove the first 6 characters: "/list "
     message_text = update.message.text[6:].strip()
     amount, date_filter = parse_list_arguments(message_text)
 
-    update.message.reply_text(generate_list_events(chat_id, amount, date_filter), parse_mode='markdown')
+    update.message.reply_text(
+        generate_list_events(chat_id, amount, date_filter), parse_mode="markdown"
+    )
 
 
 def parse_list_arguments(message: str) -> Tuple[int, DateFilter]:
@@ -118,18 +127,18 @@ def parse_list_arguments(message: str) -> Tuple[int, DateFilter]:
     # If only one arg it could be amount or date filter
     if len(args) == 1:
         arg = args[0]
-        
+
         # Try to get amount
         try:
             amount = parse_list_amount(arg)
             # Future is the default when the amount is not 'all'
-            if isinstance(amount, int):
+            if amount:
                 return amount, DateFilter.future
-            
+
             # Otherwise we don't want to filter
             else:
                 return amount, DateFilter.no_filter
-        
+
         # If it's not an amount, it has to be a date filter
         except ValueError:
             # 10 is the default amount
@@ -137,12 +146,12 @@ def parse_list_arguments(message: str) -> Tuple[int, DateFilter]:
 
     else:
         return parse_list_amount(args[0]), DateFilter(args[1])
-    
+
 
 def parse_list_amount(amount_str: str) -> int:
     """
     Convert str to absolute integer.
-    
+
     If amount is "all", then it will be 0.
 
     Args:
@@ -152,7 +161,7 @@ def parse_list_amount(amount_str: str) -> int:
         int: amount to be used
     """
 
-    if amount_str.lower() == 'all':
+    if amount_str.lower() == "all":
         return 0
 
     else:
@@ -171,22 +180,26 @@ def generate_list_events(chat_id: int, amount: int, date_filter: DateFilter) -> 
     Returns:
         str: Message to reply
     """
-    
-    amount_str = (str(amount) if amount else 'All') + ' '
-    date_str = (date_filter.value + ' ') if date_filter != DateFilter.no_filter else ''
-    event_texts = [f'*{amount_str}{date_str}events:*\n']
+
+    amount_str = (str(amount) if amount else "All") + " "
+    date_str = (date_filter.value + " ") if date_filter != DateFilter.no_filter else ""
+    event_texts = [f"*{amount_str}{date_str}events:*\n"]
 
     events = list_events_db(chat_id=chat_id, amount=amount, date_filter=date_filter)
     for event in events:
-        event_texts.append(f"- \[{event['date']}] *{event['title']}* /event{event['id']}")
+        event_texts.append(
+            f"- \[{event['date']}] *{event['title']}* /event{event['id']}"
+        )
 
-    return '\n'.join(event_texts)
+    return "\n".join(event_texts)
 
 
-def list_events_db(chat_id: int, amount: int, date_filter: DateFilter) -> Iterator[Dict[str, Any]]:
+def list_events_db(
+    chat_id: int, amount: int, date_filter: DateFilter
+) -> Iterator[Dict[str, Any]]:
     """
     Query the database to retrieve the list of events of a singular chat.
-    
+
     Returns the events as a generator.
 
     Args:
@@ -201,14 +214,13 @@ def list_events_db(chat_id: int, amount: int, date_filter: DateFilter) -> Iterat
 
     database = get_database()
 
-    select_query = (
-        select([database.reminder.c.id, database.reminder.c.date, database.reminder.c.title])
-        .where(database.reminder.c.chat_id == chat_id)
-    )
+    select_query = select(
+        [database.reminder.c.id, database.reminder.c.date, database.reminder.c.title]
+    ).where(database.reminder.c.chat_id == chat_id)
 
     if amount:
         select_query = select_query.limit(amount)
-    
+
     if date_filter != DateFilter.no_filter:
         current_date = datetime.now()
 
@@ -226,10 +238,7 @@ def list_events_db(chat_id: int, amount: int, date_filter: DateFilter) -> Iterat
 
     results = database.engine.execute(select_query)
 
-    return (
-        {**row} for row in results
-    )
+    return ({**row} for row in results)
 
 
-EVENTS_HANDLERS = [
-    CommandHandler("list", list_events)]
+EVENTS_HANDLERS = [CommandHandler("list", list_events)]

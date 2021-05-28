@@ -75,9 +75,11 @@ def register_event(update: Update, context) -> None:
 
     except Exception as err:
         update_message = "Something went wrong. Try again later."
-        logger.error('Something failed inserting the event')
-        logger.error(f'Got: {err}')
-        logger.error(f"ChatID:{chat_id}\nDate:{event_date}\nTitle:{event_title}\nMessage:{event_message}")
+        logger.error("Something failed inserting the event")
+        logger.error(f"Got: {err}")
+        logger.error(
+            f"ChatID:{chat_id}\nDate:{event_date}\nTitle:{event_title}\nMessage:{event_message}"
+        )
         update.message.reply_text(update_message)
 
     try:
@@ -87,13 +89,15 @@ def register_event(update: Update, context) -> None:
             title=event_title,
             message=event_message,
         )
-        update_message = '\N{THUMBS UP SIGN}'
+        update_message = "\N{THUMBS UP SIGN}"
 
     except Exception as err:
         update_message = "Something went wrong. Try again later."
-        logger.error('Something failed updating the event')
-        logger.error(f'Got: {err}')
-        logger.error(f"ChatID:{chat_id}\nDate:{event_date}\nTitle:{event_title}\nMessage:{event_message}")
+        logger.error("Something failed updating the event")
+        logger.error(f"Got: {err}")
+        logger.error(
+            f"ChatID:{chat_id}\nDate:{event_date}\nTitle:{event_title}\nMessage:{event_message}"
+        )
 
     update.message.reply_text(update_message)
 
@@ -139,7 +143,9 @@ def update_event_db(chat_id: int, date: datetime, title: str, message: str) -> N
             AND date = :date
         """
     )
-    database.engine.execute(update_query, chat_id=chat_id, date=date, title=title, message=message)
+    database.engine.execute(
+        update_query, chat_id=chat_id, date=date, title=title, message=message
+    )
 
 
 REGISTER_HANDLERS = [
